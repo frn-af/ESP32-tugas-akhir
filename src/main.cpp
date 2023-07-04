@@ -44,6 +44,8 @@ void loop()
 
     bool kontrol = network->kontrolData();
     Serial.println("kontrol :" + String(kontrol));
+    double ph = sensorData->getPHData();
+    Serial.println("PH: " + String(ph));
 
     if (DHTtaskHandle != NULL && kontrol == true)
     {
@@ -85,6 +87,7 @@ void initSensorData()
 {
   sensorData = new SensorData();
   sensorData->initDHT();
+  sensorData->initPH();
 }
 
 void initNetwork()

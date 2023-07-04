@@ -13,6 +13,12 @@ void SensorData::initDHT()
     Serial.println("DHT22 Initialized");
 }
 
+void SensorData::initPH()
+{
+    pinMode(pHPin, INPUT);
+    Serial.println("PH Initialized");
+}
+
 TempAndHumidity SensorData::getDHTData()
 {
     TempAndHumidity data = dht.getTempAndHumidity();
@@ -23,4 +29,13 @@ TempAndHumidity SensorData::getDHTData()
         data.humidity = 0;
     }
     return data;
+}
+
+double SensorData::getPHData()
+{
+    nilai_analog_PH = analogRead(pHPin);
+    Tegangan_pH = (nilai_analog_PH * 3.3) / 4095;
+    pH_Step = (PH4 - PH7) / 3;
+    Po = 7 + ((PH7 - Tegangan_pH) / pH_Step);
+    return Po;
 }
