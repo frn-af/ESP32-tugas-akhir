@@ -72,3 +72,28 @@ void Network::DataUpdate(int temp, int hum)
         }
     }
 }
+
+bool Network::kontrolData()
+{
+    if (WiFi.status() == WL_CONNECTED && Firebase.ready())
+    {
+        String DocPath = "tools/kontrol";
+        String mask = "kontrol";
+
+        if (Firebase.Firestore.getDocument(&fbdo, FIREBASE_PROJECT_ID, "", DocPath.c_str(), mask.c_str()))
+        {
+            FirebaseJson payload;
+            payload.setJsonData(fbdo.payload());
+            FirebaseJsonData jsonData;
+            payload.get(jsonData, "fields/kontrol/booleanValue");
+
+            return jsonData.boolValue;
+        }
+        else
+        {
+            Serial.println("Get Failed");
+            Serial.println(fbdo.errorReason());
+            return false;
+        }
+    }
+}

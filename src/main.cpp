@@ -40,10 +40,12 @@ void loop()
 {
   if (WiFi.status() == WL_CONNECTED && Firebase.ready())
   {
+    delay(5000);
 
-    delay(2000);
+    bool kontrol = network->kontrolData();
+    Serial.println("kontrol :" + String(kontrol));
 
-    if (DHTtaskHandle != NULL)
+    if (DHTtaskHandle != NULL && kontrol == true)
     {
       vTaskResume(DHTtaskHandle);
     }

@@ -22,6 +22,7 @@ public:
     void initWiFi();
     void FirebaseInit();
     void DataUpdate(int temp, int hum);
+    bool kontrolData();
 };
 
 #endif // !Network_H_
