@@ -4,23 +4,6 @@
 #include <Ticker.h>
 
 Network *network;
-#define NETWORK_H
-
-class Network
-{
-private:
-  bool isConnected; // Variable to track WiFi connection status
-
-  void onWiFiConnect(const WiFiEventStationModeGotIP &event);
-  void onWiFiDisconnect(const WiFiEventStationModeDisconnected &event);
-
-public:
-  Network();
-  void setupWiFi(const char *ssid, const char *password);
-  bool isConnectedToWiFi();
-};
-
-#endif // NETWORK_H
 SensorData *sensorData;
 
 TaskHandle_t DHTtaskHandle = NULL;
