@@ -5,8 +5,15 @@
 #include <LiquidCrystal_I2C.h>
 #include <PID_v1.h>
 
+/*
+ * define pin for hardware
+ * pin for DHT, PH declare here so we dont need to change the lib
+ */
 const int PWM = 18;
 const int RELAY = 26;
+const int DHTPin = 19;
+const int pHPin = 32;
+
 bool kontrol = false;
 double setpoint, input, output, temp, hum, ph;
 double Kp = 2, Ki = 5, Kd = 1;
@@ -23,30 +30,7 @@ void init_sensor_data();
 void sensor_task(void *pvParameters);
 void trigger_sensor_task();
 void get_sensor_data();
-
-void init_sensor_task()
-{
-  init_sensor_data();
-
-  xTaskCreatePinnedToCore(
-      sensor_task,    /* Task function. */
-      "sensorTask",   /* String with name of task. */
-      10000,          /* Stack size in bytes. */
-      NULL,           /* Parameter passed as input of the task */
-      1,              /* Priority of the task. */
-      &DHTtaskHandle, /* Task handle. */
-      1);             /* Core where the task should run */
-
-  DHTticker.attach(5, trigger_sensor_task);
-}
-
-void trigger_sensor_task()
-{
-  if (DHTtaskHandle != NULL)
-  {
-    xTaskResumeFromISR(DHTtaskHandle);
-  }
-}
+void init_sensor_task();
 
 void setup()
 {
@@ -65,7 +49,7 @@ void setup()
   lcd.setCursor(0, 0);
   lcd.println("Network ready");
   lcd.setCursor(0, 1);
-  lcd.println("initiating");
+  lcd.println("init system");
 
   init_sensor_task();
 }
@@ -74,7 +58,7 @@ void loop()
 {
   if (WiFi.status() == WL_CONNECTED && Firebase.ready())
   {
-    delay(2000);
+    delay(1000);
 
     kontrol = network->get_kontrol_data();
     setpoint = network->get_set_point();
@@ -102,10 +86,38 @@ void loop()
     else
     {
       Serial.println("DHTtask suspended");
+      lcd.setCursor(0, 0);
+      lcd.println("waiting for");
+      lcd.setCursor(0, 1);
+      lcd.println("actived");
       vTaskSuspend(DHTtaskHandle);
     }
   }
   yield();
+}
+
+void init_sensor_task()
+{
+  init_sensor_data();
+
+  xTaskCreatePinnedToCore(
+      sensor_task,    /* Task function. */
+      "sensorTask",   /* String with name of task. */
+      10000,          /* Stack size in bytes. */
+      NULL,           /* Parameter passed as input of the task */
+      1,              /* Priority of the task. */
+      &DHTtaskHandle, /* Task handle. */
+      1);             /* Core where the task should run */
+
+  DHTticker.attach(5, trigger_sensor_task);
+}
+
+void trigger_sensor_task()
+{
+  if (DHTtaskHandle != NULL)
+  {
+    xTaskResumeFromISR(DHTtaskHandle);
+  }
 }
 
 void sensor_task(void *pvParameters)
@@ -121,7 +133,7 @@ void get_sensor_data()
   TempAndHumidity dhtData = sensorData->get_dht_data();
   temp = dhtData.temperature;
   hum = dhtData.humidity;
-  ph = sensorData->get_ph_data();
+  ph = sensorData->get_ph_data(pHPin);
 
   Serial.println("Temp: " + String(temp));
   Serial.println("Hum: " + String(hum));
@@ -138,8 +150,8 @@ void get_sensor_data()
 void init_sensor_data()
 {
   sensorData = new SensorData();
-  sensorData->init_dht();
-  sensorData->init_ph();
+  sensorData->init_dht(DHTPin);
+  sensorData->init_ph(pHPin);
 }
 
 void init_network()
