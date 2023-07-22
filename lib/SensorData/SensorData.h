@@ -20,10 +20,10 @@ private:
 
 public:
     SensorData(/* args */);
-    void initDHT();
-    void initPH();
-    TempAndHumidity getDHTData();
-    double getPHData();
+    void init_dht();
+    void init_ph();
+    TempAndHumidity get_dht_data();
+    double get_ph_data();
 };
 
 #endif // !SensorData_H_

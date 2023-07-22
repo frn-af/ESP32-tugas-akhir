@@ -33,7 +33,7 @@ void WiFiEventGotIP(WiFiEvent_t event, WiFiEventInfo_t info)
     Serial.println(WiFi.localIP());
 }
 
-void Network::initWiFi()
+void Network::init_wifi()
 {
 
     WiFi.onEvent(WiFiEventConnected, ARDUINO_EVENT_WIFI_STA_CONNECTED);
@@ -42,7 +42,7 @@ void Network::initWiFi()
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 }
 
-void Network::FirebaseInit()
+void Network::init_firebase()
 {
     config.api_key = API_KEY;
     auth.user.email = USER_EMAIL;
@@ -51,11 +51,11 @@ void Network::FirebaseInit()
     Firebase.begin(&config, &auth);
 }
 
-bool Network::kontrolData()
+bool Network::get_kontrol_data()
 {
     if (WiFi.status() == WL_CONNECTED && Firebase.ready())
     {
-        String DocPath = "tools/kontrol";
+        String DocPath = "tools/monitoring";
         String mask = "kontrol";
 
         if (Firebase.Firestore.getDocument(&fbdo, FIREBASE_PROJECT_ID, "", DocPath.c_str(), mask.c_str()))
@@ -80,7 +80,7 @@ bool Network::kontrolData()
     }
 }
 
-void Network::DataUpdate(double temp, double hum, double ph)
+void Network::update_data(double temp, double hum, double ph)
 {
 
     if (WiFi.status() == WL_CONNECTED && Firebase.ready())
@@ -101,5 +101,34 @@ void Network::DataUpdate(double temp, double hum, double ph)
             Serial.println("Patch Failed");
             Serial.println(fbdo.errorReason());
         }
+    }
+}
+
+int Network::get_set_point()
+{
+    if (WiFi.status() == WL_CONNECTED && Firebase.ready())
+    {
+        String DocPath = "tools/monitoring";
+        String mask = "setpoint";
+
+        if (Firebase.Firestore.getDocument(&fbdo, FIREBASE_PROJECT_ID, "", DocPath.c_str(), mask.c_str()))
+        {
+            FirebaseJson payload;
+            payload.setJsonData(fbdo.payload());
+            FirebaseJsonData jsonData;
+            payload.get(jsonData, "fields/setpoint/integerValue");
+
+            return jsonData.intValue;
+        }
+        else
+        {
+            Serial.println("Get Failed");
+            Serial.println(fbdo.errorReason());
+            return 0;
+        }
+    }
+    else
+    {
+        return 0;
     }
 }

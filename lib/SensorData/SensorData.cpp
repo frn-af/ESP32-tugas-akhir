@@ -7,19 +7,19 @@ SensorData::SensorData(/* args */)
     instance = this;
 }
 
-void SensorData::initDHT()
+void SensorData::init_dht()
 {
     dht.setup(DHTPin, DHTesp::DHT22);
     Serial.println("DHT22 Initialized");
 }
 
-void SensorData::initPH()
+void SensorData::init_ph()
 {
     pinMode(pHPin, INPUT);
     Serial.println("PH Initialized");
 }
 
-TempAndHumidity SensorData::getDHTData()
+TempAndHumidity SensorData::get_dht_data()
 {
     TempAndHumidity data = dht.getTempAndHumidity();
     if (isnan(data.temperature) || isnan(data.humidity))
@@ -31,7 +31,7 @@ TempAndHumidity SensorData::getDHTData()
     return data;
 }
 
-double SensorData::getPHData()
+double SensorData::get_ph_data()
 {
     nilai_analog_PH = analogRead(pHPin);
     Tegangan_pH = (nilai_analog_PH * 3.3) / 4095;

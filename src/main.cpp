@@ -3,30 +3,33 @@
 #include "SensorData.h"
 #include <Ticker.h>
 #include <LiquidCrystal_I2C.h>
+#include <PID_v1.h>
+
+const int PWM = 18;
+const int RELAY = 26;
+bool kontrol = false;
+double setpoint, input, output, temp, hum, ph;
+double Kp = 2, Ki = 5, Kd = 1;
 
 Network *network;
 SensorData *sensorData;
-
 TaskHandle_t DHTtaskHandle = NULL;
-
 Ticker DHTticker;
-
 LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27, 16, 2);
+PID myPID(&input, &output, &setpoint, Kp, Ki, Kd, DIRECT);
 
-void initNetwork();
-void initSensorData();
-void sensorTask(void *pvParameters);
-void triggerSensorTask();
-void getSensordata();
+void init_network();
+void init_sensor_data();
+void sensor_task(void *pvParameters);
+void trigger_sensor_task();
+void get_sensor_data();
 
-bool kontrol = false;
-
-void initDHT()
+void init_sensor_task()
 {
-  initSensorData();
+  init_sensor_data();
 
   xTaskCreatePinnedToCore(
-      sensorTask,     /* Task function. */
+      sensor_task,    /* Task function. */
       "sensorTask",   /* String with name of task. */
       10000,          /* Stack size in bytes. */
       NULL,           /* Parameter passed as input of the task */
@@ -34,10 +37,10 @@ void initDHT()
       &DHTtaskHandle, /* Task handle. */
       1);             /* Core where the task should run */
 
-  DHTticker.attach(5, triggerSensorTask);
+  DHTticker.attach(5, trigger_sensor_task);
 }
 
-void triggerSensorTask()
+void trigger_sensor_task()
 {
   if (DHTtaskHandle != NULL)
   {
@@ -51,16 +54,20 @@ void setup()
   Serial.println("System starting...");
   lcd.init();
   lcd.backlight();
+  pinMode(PWM, OUTPUT);
+  pinMode(RELAY, OUTPUT);
+
   lcd.setCursor(0, 0);
   lcd.print("System starting...");
 
-  initNetwork();
+  init_network();
 
   lcd.setCursor(0, 0);
   lcd.println("Network ready");
   lcd.setCursor(0, 1);
   lcd.println("initiating");
-  initDHT();
+
+  init_sensor_task();
 }
 
 void loop()
@@ -69,13 +76,28 @@ void loop()
   {
     delay(2000);
 
-    kontrol = network->kontrolData();
+    kontrol = network->get_kontrol_data();
+    setpoint = network->get_set_point();
     Serial.println("kontrol :" + String(kontrol));
 
     if (kontrol == true)
     {
       Serial.println("DHTtask resumed");
       vTaskResume(DHTtaskHandle);
+      input = temp;
+      myPID.Compute();
+      Serial.println("PID: " + String(output));
+
+      if (output > 0)
+      {
+        digitalWrite(RELAY, HIGH);
+      }
+      else
+      {
+        digitalWrite(RELAY, LOW);
+      }
+
+      analogWrite(PWM, (int)output);
     }
     else
     {
@@ -86,20 +108,20 @@ void loop()
   yield();
 }
 
-void sensorTask(void *pvParameters)
+void sensor_task(void *pvParameters)
 {
   for (;;)
   {
-    getSensordata();
+    get_sensor_data();
   }
 }
 
-void getSensordata()
+void get_sensor_data()
 {
-  TempAndHumidity dhtData = sensorData->getDHTData();
-  double temp = dhtData.temperature;
-  double hum = dhtData.humidity;
-  double ph = sensorData->getPHData();
+  TempAndHumidity dhtData = sensorData->get_dht_data();
+  temp = dhtData.temperature;
+  hum = dhtData.humidity;
+  ph = sensorData->get_ph_data();
 
   Serial.println("Temp: " + String(temp));
   Serial.println("Hum: " + String(hum));
@@ -110,19 +132,19 @@ void getSensordata()
   lcd.setCursor(0, 1);
   lcd.println("Hum: " + String(hum));
 
-  network->DataUpdate(temp, hum, ph);
+  network->update_data(temp, hum, ph);
 }
 
-void initSensorData()
+void init_sensor_data()
 {
   sensorData = new SensorData();
-  sensorData->initDHT();
-  sensorData->initPH();
+  sensorData->init_dht();
+  sensorData->init_ph();
 }
 
-void initNetwork()
+void init_network()
 {
   network = new Network();
-  network->initWiFi();
-  network->FirebaseInit();
+  network->init_wifi();
+  network->init_firebase();
 }

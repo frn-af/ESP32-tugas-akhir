@@ -18,10 +18,11 @@ private:
 
 public:
     Network(/* args */);
-    void initWiFi();
-    void FirebaseInit();
-    void DataUpdate(double temp, double hum, double ph);
-    bool kontrolData();
+    void init_wifi();
+    void init_firebase();
+    void update_data(double temp, double hum, double ph);
+    bool get_kontrol_data();
+    int get_set_point();
 };
 
 #endif // !Network_H_
