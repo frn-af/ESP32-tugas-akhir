@@ -2,6 +2,7 @@
 #include "Network.h"
 #include "SensorData.h"
 #include <Ticker.h>
+#include <LiquidCrystal_I2C.h>
 
 Network *network;
 SensorData *sensorData;
@@ -9,6 +10,8 @@ SensorData *sensorData;
 TaskHandle_t DHTtaskHandle = NULL;
 
 Ticker DHTticker;
+
+LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27, 16, 2);
 
 void initNetwork();
 void initSensorData();
@@ -46,7 +49,17 @@ void setup()
 {
   Serial.begin(115200);
   Serial.println("System starting...");
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print("System starting...");
+
   initNetwork();
+
+  lcd.setCursor(0, 0);
+  lcd.println("Network ready");
+  lcd.setCursor(0, 1);
+  lcd.println("initiating");
   initDHT();
 }
 
@@ -91,6 +104,11 @@ void getSensordata()
   Serial.println("Temp: " + String(temp));
   Serial.println("Hum: " + String(hum));
   Serial.println("PH: " + String(ph));
+
+  lcd.setCursor(0, 0);
+  lcd.println("Temp: " + String(temp));
+  lcd.setCursor(0, 1);
+  lcd.println("Hum: " + String(hum));
 
   network->DataUpdate(temp, hum, ph);
 }

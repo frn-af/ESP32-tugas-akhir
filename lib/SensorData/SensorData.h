@@ -8,7 +8,7 @@ class SensorData
 private:
     /* data */
     DHTesp dht;
-    const int DHTPin = 21;
+    const int DHTPin = 19;
     const int pHPin = 32;
     float Po = 0;
     float pH_Step;

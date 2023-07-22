@@ -15,7 +15,6 @@ private:
     friend void WiFiEventConnected(WiFiEvent_t event, WiFiEventInfo_t info);
     friend void WiFiEventDisconnected(WiFiEvent_t event, WiFiEventInfo_t info);
     friend void WiFiEventGotIP(WiFiEvent_t event, WiFiEventInfo_t info);
-    friend void FirestoreTokenStatusCallback(TokenInfo info);
 
 public:
     Network(/* args */);

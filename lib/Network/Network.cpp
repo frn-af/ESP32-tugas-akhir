@@ -35,6 +35,7 @@ void WiFiEventGotIP(WiFiEvent_t event, WiFiEventInfo_t info)
 
 void Network::initWiFi()
 {
+
     WiFi.onEvent(WiFiEventConnected, ARDUINO_EVENT_WIFI_STA_CONNECTED);
     WiFi.onEvent(WiFiEventDisconnected, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
     WiFi.onEvent(WiFiEventGotIP, ARDUINO_EVENT_WIFI_STA_GOT_IP);
