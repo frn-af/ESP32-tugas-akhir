@@ -133,7 +133,7 @@ void get_sensor_data()
   TempAndHumidity dhtData = sensorData->get_dht_data();
   temp = dhtData.temperature;
   hum = dhtData.humidity;
-  ph = sensorData->get_ph_data(pHPin);
+  ph = sensorData->get_ph_data();
 
   Serial.println("Temp: " + String(temp));
   Serial.println("Hum: " + String(hum));
@@ -149,9 +149,9 @@ void get_sensor_data()
 
 void init_sensor_data()
 {
-  sensorData = new SensorData();
-  sensorData->init_dht(DHTPin);
-  sensorData->init_ph(pHPin);
+  sensorData = new SensorData(DHTPin, pHPin);
+  sensorData->init_dht();
+  sensorData->init_ph();
 }
 
 void init_network()

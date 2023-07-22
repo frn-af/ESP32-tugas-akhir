@@ -8,6 +8,9 @@ class SensorData
 private:
     /* data */
     DHTesp dht;
+    int DHTPin;
+    int pHPin;
+
     float Po = 0;
     float pH_Step;
     int nilai_analog_PH;
@@ -17,11 +20,11 @@ private:
     float PH7 = 2.7;
 
 public:
-    SensorData(/* args */);
-    void init_dht(int DHTPin);
-    void init_ph(int pHPin);
+    SensorData(int DHTPin, int pHPin);
+    void init_dht();
+    void init_ph();
     TempAndHumidity get_dht_data();
-    double get_ph_data(int pHPin);
+    double get_ph_data();
 };
 
 #endif // !SensorData_H_
