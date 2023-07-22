@@ -21,7 +21,7 @@ public:
     Network(/* args */);
     void initWiFi();
     void FirebaseInit();
-    void DataUpdate(int temp, int hum);
+    void DataUpdate(double temp, double hum, double ph);
     bool kontrolData();
 };
 

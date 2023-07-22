@@ -12,20 +12,34 @@ Ticker DHTticker;
 
 void initNetwork();
 void initSensorData();
-void DHTtask(void *pvParameters);
-void getDHTData();
+void sensorTask(void *pvParameters);
+void triggerSensorTask();
+void getSensordata();
+
+bool kontrol = false;
 
 void initDHT()
 {
   initSensorData();
 
-  xTaskCreate(
-      DHTtask,         /* Task function. */
-      "DHTtask",       /* String with name of task. */
-      10000,           /* Stack size in bytes. */
-      NULL,            /* Parameter passed as input of the task */
-      1,               /* Priority of the task. */
-      &DHTtaskHandle); /* Task handle. */
+  xTaskCreatePinnedToCore(
+      sensorTask,     /* Task function. */
+      "sensorTask",   /* String with name of task. */
+      10000,          /* Stack size in bytes. */
+      NULL,           /* Parameter passed as input of the task */
+      1,              /* Priority of the task. */
+      &DHTtaskHandle, /* Task handle. */
+      1);             /* Core where the task should run */
+
+  DHTticker.attach(5, triggerSensorTask);
+}
+
+void triggerSensorTask()
+{
+  if (DHTtaskHandle != NULL)
+  {
+    xTaskResumeFromISR(DHTtaskHandle);
+  }
 }
 
 void setup()
@@ -40,47 +54,45 @@ void loop()
 {
   if (WiFi.status() == WL_CONNECTED && Firebase.ready())
   {
-    delay(5000);
+    delay(2000);
 
-    bool kontrol = network->kontrolData();
+    kontrol = network->kontrolData();
     Serial.println("kontrol :" + String(kontrol));
-    double ph = sensorData->getPHData();
-    Serial.println("PH: " + String(ph));
 
-    if (DHTtaskHandle != NULL && kontrol == true)
+    if (kontrol == true)
     {
+      Serial.println("DHTtask resumed");
       vTaskResume(DHTtaskHandle);
     }
-  }
-  else
-  {
-    if (DHTtaskHandle != NULL)
+    else
     {
+      Serial.println("DHTtask suspended");
       vTaskSuspend(DHTtaskHandle);
     }
   }
   yield();
 }
 
-void getDHTData()
-{
-  TempAndHumidity data = sensorData->getDHTData();
-  // data temperature and humidity to number
-
-  Serial.println("Temperature: " + String(data.temperature) + " C");
-  Serial.println("Humidity: " + String(data.humidity) + " %");
-  int temp = data.temperature;
-  int hum = data.humidity;
-  network->DataUpdate(temp, hum);
-}
-
-void DHTtask(void *pvParameters)
+void sensorTask(void *pvParameters)
 {
   for (;;)
   {
-    getDHTData();
-    vTaskDelay(10000 / portTICK_PERIOD_MS);
+    getSensordata();
   }
+}
+
+void getSensordata()
+{
+  TempAndHumidity dhtData = sensorData->getDHTData();
+  double temp = dhtData.temperature;
+  double hum = dhtData.humidity;
+  double ph = sensorData->getPHData();
+
+  Serial.println("Temp: " + String(temp));
+  Serial.println("Hum: " + String(hum));
+  Serial.println("PH: " + String(ph));
+
+  network->DataUpdate(temp, hum, ph);
 }
 
 void initSensorData()

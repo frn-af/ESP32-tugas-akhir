@@ -50,29 +50,6 @@ void Network::FirebaseInit()
     Firebase.begin(&config, &auth);
 }
 
-void Network::DataUpdate(int temp, int hum)
-{
-
-    if (WiFi.status() == WL_CONNECTED && Firebase.ready())
-    {
-        String DocPath = "tools/monitoring";
-        FirebaseJson content;
-
-        content.set("fields/suhu/doubleValue", temp);
-        content.set("fields/kelembaban/doubleValue", hum);
-
-        if (Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "", DocPath.c_str(), content.raw(), "suhu,kelembaban"))
-        {
-            Serial.println("Patch Success");
-        }
-        else
-        {
-            Serial.println("Patch Failed");
-            Serial.println(fbdo.errorReason());
-        }
-    }
-}
-
 bool Network::kontrolData()
 {
     if (WiFi.status() == WL_CONNECTED && Firebase.ready())
@@ -94,6 +71,34 @@ bool Network::kontrolData()
             Serial.println("Get Failed");
             Serial.println(fbdo.errorReason());
             return false;
+        }
+    }
+    else
+    {
+        return false;
+    }
+}
+
+void Network::DataUpdate(double temp, double hum, double ph)
+{
+
+    if (WiFi.status() == WL_CONNECTED && Firebase.ready())
+    {
+        String DocPath = "tools/monitoring";
+        FirebaseJson content;
+
+        content.set("fields/suhu/doubleValue", temp);
+        content.set("fields/kelembaban/doubleValue", hum);
+        content.set("fields/kelembaban/doubleValue", ph);
+
+        if (Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "", DocPath.c_str(), content.raw(), "suhu,kelembaban,ph"))
+        {
+            Serial.println("Patch Success");
+        }
+        else
+        {
+            Serial.println("Patch Failed");
+            Serial.println(fbdo.errorReason());
         }
     }
 }
