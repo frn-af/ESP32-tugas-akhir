@@ -5,6 +5,10 @@
 #include <LiquidCrystal_I2C.h>
 #include <PID_v1.h>
 
+#define NTP_SERVER "pool.ntp.org"
+#define UTC_OFFSET 25200
+#define DST_OFFSET 0
+
 /*
  * define pin for hardware
  * pin for DHT, PH declare here so we dont need to change the lib
@@ -15,22 +19,26 @@ const int DHTPin = 19;
 const int pHPin = 32;
 
 bool kontrol = false;
-double setpoint, input, output, temp, hum, ph;
+double temp, hum, ph;
+
+double Setpoint, Input, Output;
 double Kp = 2, Ki = 5, Kd = 1;
 
 Network *network;
 SensorData *sensorData;
-TaskHandle_t DHTtaskHandle = NULL;
-Ticker DHTticker;
 LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27, 16, 2);
-PID myPID(&input, &output, &setpoint, Kp, Ki, Kd, DIRECT);
+PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
+
+Ticker ticker;
+TaskHandle_t sensorTask;
 
 void init_network();
 void init_sensor_data();
+void get_sensor_data();
+void get_time_info();
+void init_sensor_task();
 void sensor_task(void *pvParameters);
 void trigger_sensor_task();
-void get_sensor_data();
-void init_sensor_task();
 
 void setup()
 {
@@ -41,82 +49,85 @@ void setup()
   pinMode(PWM, OUTPUT);
   pinMode(RELAY, OUTPUT);
 
+  lcd.clear();
+
   lcd.setCursor(0, 0);
-  lcd.print("System starting...");
+  lcd.println("System starting.");
 
   init_network();
 
   lcd.setCursor(0, 0);
-  lcd.println("Network ready");
+  lcd.println("Network ready...");
   lcd.setCursor(0, 1);
-  lcd.println("init system");
+  lcd.println("init system.....");
+
+  myPID.SetMode(AUTOMATIC);
+
+  configTime(UTC_OFFSET, DST_OFFSET, NTP_SERVER);
 
   init_sensor_task();
 }
 
 void loop()
 {
+
   if (WiFi.status() == WL_CONNECTED && Firebase.ready())
   {
-    delay(1000);
-
     kontrol = network->get_kontrol_data();
-    setpoint = network->get_set_point();
-    Serial.println("kontrol :" + String(kontrol));
+    Setpoint = network->get_set_point();
 
-    if (kontrol == true)
-    {
-      Serial.println("DHTtask resumed");
-      vTaskResume(DHTtaskHandle);
-      input = temp;
-      myPID.Compute();
-      Serial.println("PID: " + String(output));
-
-      if (output > 0)
-      {
-        digitalWrite(RELAY, HIGH);
-      }
-      else
-      {
-        digitalWrite(RELAY, LOW);
-      }
-
-      analogWrite(PWM, (int)output);
-    }
-    else
-    {
-      Serial.println("DHTtask suspended");
-      lcd.setCursor(0, 0);
-      lcd.println("waiting for");
-      lcd.setCursor(0, 1);
-      lcd.println("actived");
-      vTaskSuspend(DHTtaskHandle);
-    }
+    Serial.println("******************************");
+    Serial.println("Kontrol: " + String(kontrol));
+    Serial.println("Setpoint: " + String(Setpoint));
+    delay(1000);
   }
-  yield();
+
+  if (kontrol == true)
+  {
+    vTaskResume(sensorTask);
+    get_time_info();
+    delay(1000);
+  }
+
+  if (kontrol == false)
+  {
+    vTaskSuspend(sensorTask);
+    Serial.println("******************************");
+    Serial.println("system paused");
+
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.println("waiting for.....");
+    lcd.setCursor(0, 1);
+    lcd.println("actived system  ");
+
+    delay(1000);
+  }
 }
 
 void init_sensor_task()
 {
   init_sensor_data();
 
-  xTaskCreatePinnedToCore(
-      sensor_task,    /* Task function. */
-      "sensorTask",   /* String with name of task. */
-      10000,          /* Stack size in bytes. */
-      NULL,           /* Parameter passed as input of the task */
-      1,              /* Priority of the task. */
-      &DHTtaskHandle, /* Task handle. */
-      1);             /* Core where the task should run */
+  xTaskCreate(
+      sensor_task,   /* Function to implement the task */
+      "sensor_task", /* Name of the task */
+      10000,         /* Stack size in words */
+      NULL,          /* Task input parameter */
+      1,             /* Priority of the task */
+      &sensorTask);  /* Task handle. */
 
-  DHTticker.attach(5, trigger_sensor_task);
+  if (sensorTask != NULL)
+  {
+    ticker.attach(5, trigger_sensor_task);
+  }
 }
 
 void trigger_sensor_task()
 {
-  if (DHTtaskHandle != NULL)
+  if (sensorTask != NULL)
   {
-    xTaskResumeFromISR(DHTtaskHandle);
+    vTaskResume(sensorTask);
   }
 }
 
@@ -135,16 +146,55 @@ void get_sensor_data()
   hum = dhtData.humidity;
   ph = sensorData->get_ph_data();
 
+  Input = temp;
+  myPID.Compute();
+
+  analogWrite(PWM, (int)Output);
+
+  if (Input > Setpoint)
+  {
+    digitalWrite(RELAY, LOW);
+  }
+  else
+  {
+    digitalWrite(RELAY, HIGH);
+  }
+
+  Serial.println("******************************");
   Serial.println("Temp: " + String(temp));
   Serial.println("Hum: " + String(hum));
   Serial.println("PH: " + String(ph));
 
+  Serial.println("******************************");
+  Serial.println("Input: " + String(Input));
+  Serial.println("Output: " + String(Output));
+
+  lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.println("Temp: " + String(temp));
+  lcd.println("Temp:" + String((int)temp));
   lcd.setCursor(0, 1);
-  lcd.println("Hum: " + String(hum));
+  lcd.println("Hum :" + String((int)hum));
 
   network->update_data(temp, hum, ph);
+}
+
+void get_time_info()
+{
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo))
+  {
+    Serial.println("******************************");
+    Serial.println("Failed to obtain time");
+    return;
+  }
+
+  String date = String(timeinfo.tm_mday) + "/" + String(timeinfo.tm_mon + 1) + "/" + String(timeinfo.tm_year + 1900);
+
+  Serial.println("******************************");
+  Serial.println(date);
+
+  lcd.setCursor(8, 1);
+  lcd.println(&timeinfo, "%d/%m/%y");
 }
 
 void init_sensor_data()
