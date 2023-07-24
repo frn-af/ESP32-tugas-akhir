@@ -1,4 +1,5 @@
 #include "Network.h"
+
 // Provide the token generation process info.
 #include <addons/TokenHelper.h>
 
@@ -78,25 +79,31 @@ bool Network::get_kontrol_data()
 {
     if (WiFi.status() == WL_CONNECTED && Firebase.ready())
     {
-        String DocPath = "tools/monitoring";
+        String documentPath = "tools/monitoring";
         String mask = "kontrol";
 
-        if (Firebase.Firestore.getDocument(&fbdo, FIREBASE_PROJECT_ID, "", DocPath.c_str(), mask.c_str()))
+        // If the document path contains space e.g. "a b c/d e f"
+        // It should encode the space as %20 then the path will be "a%20b%20c/d%20e%20f"
+
+        Serial.print("Get a document... ");
+
+        if (Firebase.Firestore.getDocument(&fbdo, FIREBASE_PROJECT_ID, "", documentPath.c_str(), mask.c_str()))
         {
+
             FirebaseJson payload;
             payload.setJsonData(fbdo.payload());
             FirebaseJsonData jsonData;
             payload.get(jsonData, "fields/kontrol/booleanValue");
 
-            return jsonData.boolValue;
+            if (jsonData.success)
+            {
+                Serial.println(jsonData.boolValue ? "true" : "false");
+                return jsonData.boolValue;
+            }
         }
         else
-        {
-            Serial.println("******************************");
-            Serial.println("failed get kontrol data");
             Serial.println(fbdo.errorReason());
-            return false;
-        }
+        return false;
     }
     else
     {

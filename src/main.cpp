@@ -24,20 +24,17 @@ double temp, hum, ph;
 double Setpoint, Input, Output;
 double Kp = 2, Ki = 5, Kd = 1;
 
+unsigned long startTime, dataMillis, currentTime;
+
 Network *network;
 SensorData *sensorData;
 LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27, 16, 2);
 PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 
-Ticker ticker;
-TaskHandle_t sensorTask;
-
 void init_network();
 void init_sensor_data();
 void get_sensor_data();
 void get_time_info();
-void init_sensor_task();
-void sensor_task(void *pvParameters);
 
 void setup()
 {
@@ -63,16 +60,18 @@ void setup()
 
   configTime(UTC_OFFSET, DST_OFFSET, NTP_SERVER);
 
-  kontrol = network->get_kontrol_data();
+  init_sensor_data();
 
-  init_sensor_task();
+  startTime = millis();
 }
 
 void loop()
 {
 
-  if (WiFi.status() == WL_CONNECTED && Firebase.ready())
+  if (WiFi.status() == WL_CONNECTED && Firebase.ready() && (millis() - dataMillis > 5000 || dataMillis == 0))
   {
+    dataMillis = millis();
+
     kontrol = network->get_kontrol_data();
     Setpoint = network->get_set_point();
 
@@ -80,52 +79,46 @@ void loop()
     Serial.println("Kontrol: " + String(kontrol));
     Serial.println("Setpoint: " + String(Setpoint));
     Serial.println(" ");
-    delay(3000);
+
+    if (kontrol == true)
+    {
+      currentTime = millis() - startTime;
+
+      unsigned long seconds = currentTime / 1000;
+      unsigned long minutes = seconds / 60;
+      unsigned long hours = minutes / 60;
+
+      seconds = seconds % 60;
+      minutes = minutes % 60;
+
+      String time = String(hours) + ":" + String(minutes) + ":" + String(seconds);
+
+      Serial.println("******************************");
+      Serial.println(time);
+      Serial.println(" ");
+
+      lcd.setCursor(8, 0);
+      lcd.println("Time:" + time);
+
+      get_sensor_data();
+    }
+
+    if (kontrol == false)
+    {
+      startTime = millis();
+      currentTime = 0;
+
+      Serial.println("******************************");
+      Serial.println("system paused");
+
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.println("  waiting for   ");
+      lcd.setCursor(0, 1);
+      lcd.println(" actived system ");
+    }
   }
-
-  if (kontrol == true)
-  {
-    delay(1000);
-    vTaskResume(sensorTask);
-  }
-
-  if (kontrol == false)
-  {
-    vTaskSuspend(sensorTask);
-    Serial.println("******************************");
-    Serial.println("system paused");
-
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.println("  waiting for   ");
-    lcd.setCursor(0, 1);
-    lcd.println(" actived system ");
-
-    delay(1000);
-  }
-}
-
-void init_sensor_task()
-{
-  init_sensor_data();
-
-  xTaskCreate(
-      sensor_task,   /* Function to implement the task */
-      "sensor_task", /* Name of the task */
-      10000,         /* Stack size in words */
-      NULL,          /* Task input parameter */
-      1,             /* Priority of the task */
-      &sensorTask);  /* Task handle. */
-}
-
-void sensor_task(void *pvParameters)
-{
-  for (;;)
-  {
-    get_sensor_data();
-    get_time_info();
-    vTaskDelay(5000 / portTICK_PERIOD_MS);
-  }
+  yield();
 }
 
 void get_sensor_data()
