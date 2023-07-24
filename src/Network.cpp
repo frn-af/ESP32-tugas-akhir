@@ -64,20 +64,14 @@ void Network::init_firebase()
 
     /* Assign the api key (required) */
     config.api_key = API_KEY;
-
     /* Assign the user sign in credentials */
     auth.user.email = USER_EMAIL;
     auth.user.password = USER_PASSWORD;
-
     /* Assign the callback function for the long running token generation task */
     config.token_status_callback = tokenStatusCallback; // see addons/TokenHelper.h
-
     // Limit the size of response payload to be collected in FirebaseData
-    fbdo.setResponseSize(2048);
 
     Firebase.begin(&config, &auth);
-
-    Firebase.reconnectWiFi(true);
 }
 
 bool Network::get_kontrol_data()
@@ -93,26 +87,21 @@ bool Network::get_kontrol_data()
             payload.setJsonData(fbdo.payload());
             FirebaseJsonData jsonData;
             payload.get(jsonData, "fields/kontrol/booleanValue");
-            if (jsonData.boolValue == 1)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+
+            return jsonData.boolValue;
         }
         else
         {
             Serial.println("******************************");
             Serial.println("failed get kontrol data");
             Serial.println(fbdo.errorReason());
-            Serial.println("******************************");
             return false;
         }
     }
     else
     {
+        Serial.println("******************************");
+        Serial.println("wifi not connected or firebase not ready");
         return false;
     }
 }
@@ -172,6 +161,8 @@ int Network::get_set_point()
     }
     else
     {
+        Serial.println("******************************");
+        Serial.println("wifi not connected or firebase not ready");
         return 0;
     }
 }

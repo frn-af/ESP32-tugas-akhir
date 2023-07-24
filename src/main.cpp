@@ -38,7 +38,6 @@ void get_sensor_data();
 void get_time_info();
 void init_sensor_task();
 void sensor_task(void *pvParameters);
-void trigger_sensor_task();
 
 void setup()
 {
@@ -50,7 +49,6 @@ void setup()
   pinMode(RELAY, OUTPUT);
 
   lcd.clear();
-
   lcd.setCursor(0, 0);
   lcd.println("System starting.");
 
@@ -64,6 +62,8 @@ void setup()
   myPID.SetMode(AUTOMATIC);
 
   configTime(UTC_OFFSET, DST_OFFSET, NTP_SERVER);
+
+  kontrol = network->get_kontrol_data();
 
   init_sensor_task();
 }
@@ -79,14 +79,14 @@ void loop()
     Serial.println("******************************");
     Serial.println("Kontrol: " + String(kontrol));
     Serial.println("Setpoint: " + String(Setpoint));
-    delay(1000);
+    Serial.println(" ");
+    delay(3000);
   }
 
   if (kontrol == true)
   {
-    vTaskResume(sensorTask);
-    get_time_info();
     delay(1000);
+    vTaskResume(sensorTask);
   }
 
   if (kontrol == false)
@@ -97,9 +97,9 @@ void loop()
 
     lcd.clear();
     lcd.setCursor(0, 0);
-    lcd.println("waiting for.....");
+    lcd.println("  waiting for   ");
     lcd.setCursor(0, 1);
-    lcd.println("actived system  ");
+    lcd.println(" actived system ");
 
     delay(1000);
   }
@@ -116,19 +116,6 @@ void init_sensor_task()
       NULL,          /* Task input parameter */
       1,             /* Priority of the task */
       &sensorTask);  /* Task handle. */
-
-  if (sensorTask != NULL)
-  {
-    ticker.attach(5, trigger_sensor_task);
-  }
-}
-
-void trigger_sensor_task()
-{
-  if (sensorTask != NULL)
-  {
-    vTaskResume(sensorTask);
-  }
 }
 
 void sensor_task(void *pvParameters)
@@ -136,6 +123,8 @@ void sensor_task(void *pvParameters)
   for (;;)
   {
     get_sensor_data();
+    get_time_info();
+    vTaskDelay(5000 / portTICK_PERIOD_MS);
   }
 }
 
@@ -164,10 +153,12 @@ void get_sensor_data()
   Serial.println("Temp: " + String(temp));
   Serial.println("Hum: " + String(hum));
   Serial.println("PH: " + String(ph));
+  Serial.println(" ");
 
   Serial.println("******************************");
   Serial.println("Input: " + String(Input));
   Serial.println("Output: " + String(Output));
+  Serial.println(" ");
 
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -185,6 +176,7 @@ void get_time_info()
   {
     Serial.println("******************************");
     Serial.println("Failed to obtain time");
+    Serial.println(" ");
     return;
   }
 
@@ -192,6 +184,7 @@ void get_time_info()
 
   Serial.println("******************************");
   Serial.println(date);
+  Serial.println(" ");
 
   lcd.setCursor(8, 1);
   lcd.println(&timeinfo, "%d/%m/%y");
