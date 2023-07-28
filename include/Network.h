@@ -20,9 +20,14 @@ public:
     Network(/* args */);
     void init_wifi();
     void init_firebase();
-    void update_data(double temp, double hum, double ph);
+    void update_data(int temp, int hum, int ph);
     bool get_kontrol_data();
     int get_set_point();
+    String get_history_title();
+    void append_suhu_to_history(int suhu, String title);
+    void append_kelembaban_to_history(int kelembaban, String title);
+    void update_time_history(String time, String title);
+    void update_time(String time);
 };
 
 #endif // !Network_H_

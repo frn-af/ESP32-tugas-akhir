@@ -113,7 +113,7 @@ bool Network::get_kontrol_data()
     }
 }
 
-void Network::update_data(double temp, double hum, double ph)
+void Network::update_data(int temp, int hum, int ph)
 {
 
     if (WiFi.status() == WL_CONNECTED && Firebase.ready())
@@ -171,5 +171,192 @@ int Network::get_set_point()
         Serial.println("******************************");
         Serial.println("wifi not connected or firebase not ready");
         return 0;
+    }
+}
+
+String Network::get_history_title()
+{
+    if (WiFi.status() == WL_CONNECTED && Firebase.ready())
+    {
+        String DocPath = "tools/monitoring";
+        String mask = "history";
+
+        if (Firebase.Firestore.getDocument(&fbdo, FIREBASE_PROJECT_ID, "", DocPath.c_str(), mask.c_str()))
+        {
+            FirebaseJson payload;
+            payload.setJsonData(fbdo.payload());
+            FirebaseJsonData jsonData;
+            payload.get(jsonData, "fields/history/stringValue");
+
+            return jsonData.stringValue;
+        }
+        else
+        {
+            Serial.println("******************************");
+            Serial.println("failed get history title");
+            Serial.println(fbdo.errorReason());
+            Serial.println("******************************");
+            return "";
+        }
+    }
+    else
+    {
+        Serial.println("******************************");
+        Serial.println("wifi not connected or firebase not ready");
+        return "";
+    }
+}
+
+void Network::append_suhu_to_history(int suhu, String title)
+{
+    std::vector<struct fb_esp_firestore_document_write_t> writes;
+
+    // A write object that will be written to the document.
+    struct fb_esp_firestore_document_write_t transform_write;
+
+    // Set the write object write operation type.
+    // fb_esp_firestore_document_write_type_update,
+    // fb_esp_firestore_document_write_type_delete,
+    // fb_esp_firestore_document_write_type_transform
+    transform_write.type = fb_esp_firestore_document_write_type_transform;
+
+    // Set the document path of document to write (transform)
+    transform_write.document_transform.transform_document_path = "history/" + title;
+
+    // Set a transformation of a field of the document.
+    struct fb_esp_firestore_document_write_field_transforms_t field_transforms;
+
+    // Set field path to write.
+    field_transforms.fieldPath = "suhu";
+
+    // Set the transformation type.
+    // fb_esp_firestore_transform_type_set_to_server_value,
+    // fb_esp_firestore_transform_type_increment,
+    // fb_esp_firestore_transform_type_maaximum,
+    // fb_esp_firestore_transform_type_minimum,
+    // fb_esp_firestore_transform_type_append_missing_elements,
+    // fb_esp_firestore_transform_type_remove_all_from_array
+    field_transforms.transform_type = fb_esp_firestore_transform_type_append_missing_elements;
+
+    // For the usage of FirebaseJson, see examples/FirebaseJson/BasicUsage/Create_Edit_Parse/Create_Edit_Parse.ino
+    FirebaseJson content;
+
+    content.set("values/[0]/integerValue", suhu);
+
+    // Set the transformation content.
+    field_transforms.transform_content = content.raw();
+
+    // Add a field transformation object to a write object.
+    transform_write.document_transform.field_transforms.push_back(field_transforms);
+
+    // Add a write object to a write array.
+    writes.push_back(transform_write);
+
+    if (Firebase.Firestore.commitDocument(&fbdo, FIREBASE_PROJECT_ID, "" /* databaseId can be (default) or empty */, writes /* dynamic array of fb_esp_firestore_document_write_t */, "" /* transaction */))
+        Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
+    else
+        Serial.println(fbdo.errorReason());
+}
+
+void Network::append_kelembaban_to_history(int kelembaban, String title)
+{
+
+    std::vector<struct fb_esp_firestore_document_write_t> writes;
+
+    // A write object that will be written to the document.
+    struct fb_esp_firestore_document_write_t transform_write;
+
+    // Set the write object write operation type.
+    // fb_esp_firestore_document_write_type_update,
+    // fb_esp_firestore_document_write_type_delete,
+    // fb_esp_firestore_document_write_type_transform
+    transform_write.type = fb_esp_firestore_document_write_type_transform;
+
+    // Set the document path of document to write (transform)
+    transform_write.document_transform.transform_document_path = "history/" + title;
+
+    // Set a transformation of a field of the document.
+    struct fb_esp_firestore_document_write_field_transforms_t field_transforms;
+
+    // Set field path to write.
+    field_transforms.fieldPath = "kelembaban";
+
+    // Set the transformation type.
+    // fb_esp_firestore_transform_type_set_to_server_value,
+    // fb_esp_firestore_transform_type_increment,
+    // fb_esp_firestore_transform_type_maaximum,
+    // fb_esp_firestore_transform_type_minimum,
+    // fb_esp_firestore_transform_type_append_missing_elements,
+    // fb_esp_firestore_transform_type_remove_all_from_array
+    field_transforms.transform_type = fb_esp_firestore_transform_type_append_missing_elements;
+
+    // For the usage of FirebaseJson, see examples/FirebaseJson/BasicUsage/Create_Edit_Parse/Create_Edit_Parse.ino
+    FirebaseJson content;
+
+    content.set("values/[0]/integerValue", kelembaban);
+
+    // Set the transformation content.
+    field_transforms.transform_content = content.raw();
+
+    // Add a field transformation object to a write object.
+    transform_write.document_transform.field_transforms.push_back(field_transforms);
+
+    // Add a write object to a write array.
+    writes.push_back(transform_write);
+
+    if (Firebase.Firestore.commitDocument(&fbdo, FIREBASE_PROJECT_ID, "" /* databaseId can be (default) or empty */, writes /* dynamic array of fb_esp_firestore_document_write_t */, "" /* transaction */))
+        Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
+    else
+        Serial.println(fbdo.errorReason());
+}
+
+void Network::update_time(String time)
+{
+
+    if (WiFi.status() == WL_CONNECTED && Firebase.ready())
+    {
+        String DocPath = "tools/time";
+        FirebaseJson content;
+
+        content.set("fields/time/stringValue", time);
+
+        if (Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "", DocPath.c_str(), content.raw(), "time"))
+        {
+            Serial.println("******************************");
+            Serial.println("update time success");
+            Serial.println("******************************");
+        }
+        else
+        {
+            Serial.println("******************************");
+            Serial.println("failed update time");
+            Serial.println(fbdo.errorReason());
+            Serial.println("******************************");
+        }
+    }
+}
+
+void Network::update_time_history(String time, String title)
+{
+    if (WiFi.status() == WL_CONNECTED && Firebase.ready())
+    {
+        String DocPath = "history/" + title;
+        FirebaseJson content;
+
+        content.set("fields/lama_fermentasi/stringValue", time);
+
+        if (Firebase.Firestore.patchDocument(&fbdo, FIREBASE_PROJECT_ID, "", DocPath.c_str(), content.raw(), "lama_fermentasi"))
+        {
+            Serial.println("******************************");
+            Serial.println("update history success");
+            Serial.println("******************************");
+        }
+        else
+        {
+            Serial.println("******************************");
+            Serial.println("failed update history");
+            Serial.println(fbdo.errorReason());
+            Serial.println("******************************");
+        }
     }
 }
