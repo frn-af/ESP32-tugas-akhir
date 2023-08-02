@@ -1,3 +1,8 @@
+/**
+ * Created by Farhan Alfathra (frn.af)
+ *
+ * Github: https://github.com/frn-af/esp32-fermentation
+ */
 #include "Network.h"
 
 // Provide the token generation process info.
@@ -24,6 +29,12 @@ Network::Network(/* args */)
     instance = this;
 }
 
+/*
+ *  Callback function to get the token status from Firebase.
+ * The event will be triggered when the token is expired.
+ * @param status The token status string from Firebase.
+ * @param data The additional data string that defined in the TokenHelper.h.
+ */
 void WiFiEventConnected(WiFiEvent_t event, WiFiEventInfo_t info)
 {
     Serial.println("******************************");
@@ -47,7 +58,10 @@ void WiFiEventGotIP(WiFiEvent_t event, WiFiEventInfo_t info)
     Serial.println("******************************");
     Serial.println(WiFi.localIP());
 }
-
+/* initialized wifi network with ssid and password
+ * event handler for wifi connection
+ * so the connection will be more stable
+ */
 void Network::init_wifi()
 {
 
@@ -56,7 +70,10 @@ void Network::init_wifi()
     WiFi.onEvent(WiFiEventGotIP, ARDUINO_EVENT_WIFI_STA_GOT_IP);
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 }
-
+/*
+ * initialized firebase with api key, user email, and user password
+ * and also token status callback
+ */
 void Network::init_firebase()
 {
 
@@ -75,6 +92,12 @@ void Network::init_firebase()
     Firebase.begin(&config, &auth);
 }
 
+/*
+ * in this section below is the function for get and update data from firebase
+ * all function is using firebase firestore
+ * for more information about firestore, see https://firebase.google.com/docs/firestore
+ * or check documentation in https://github.com/mobizt/Firebase-ESP-Client/tree/main
+ */
 bool Network::get_kontrol_data()
 {
     if (WiFi.status() == WL_CONNECTED && Firebase.ready())
