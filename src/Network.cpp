@@ -136,7 +136,7 @@ bool Network::get_kontrol_data()
     }
 }
 
-void Network::update_data(int temp, int hum, int ph)
+void Network::update_data(int temp, int hum, double ph)
 {
 
     if (WiFi.status() == WL_CONNECTED && Firebase.ready())

@@ -144,7 +144,7 @@ void loop()
        * wicth is 20 second
        */
 
-      network->update_data((int)temp, (int)hum, (int)ph);
+      network->update_data((int)temp, (int)hum, ph);
     }
 
     if (kontrol == false)

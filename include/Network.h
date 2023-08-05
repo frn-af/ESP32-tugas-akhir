@@ -21,7 +21,7 @@ public:
     Network(/* args */);
     void init_wifi();
     void init_firebase();
-    void update_data(int temp, int hum, int ph);
+    void update_data(int temp, int hum, double ph);
     bool get_kontrol_data();
     int get_set_point();
     String get_history_title();
