@@ -3,6 +3,7 @@
 
 #include <WiFi.h>
 #include <Firebase_ESP_Client.h>
+#include <HTTPClient.h>
 
 class Network
 {
@@ -28,6 +29,7 @@ public:
     void append_kelembaban_to_history(int kelembaban, String title);
     void update_time_history(String time, String title);
     void update_time(String time);
+    void notification(String message);
 };
 
 #endif // !Network_H_

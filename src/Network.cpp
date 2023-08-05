@@ -9,8 +9,8 @@
 #include <addons/TokenHelper.h>
 
 /* 1. Define the WiFi credentials */
-#define WIFI_SSID "Tenda"
-#define WIFI_PASSWORD "d212blbr"
+#define WIFI_SSID "vivo 1719"
+#define WIFI_PASSWORD "onlyme1234"
 
 /* 2. Define the API Key */
 #define API_KEY "AIzaSyAQqn8sTOO34RnbW5AWfegClYKqe-XM8E4"
@@ -381,5 +381,43 @@ void Network::update_time_history(String time, String title)
             Serial.println(fbdo.errorReason());
             Serial.println("******************************");
         }
+    }
+}
+
+void Network::notification()
+{
+    if (WiFi.status() == WL_CONNECTED)
+    {
+        HTTPClient http;
+
+        // URL of the API endpoint
+        const char *url = "https://app.nativenotify.com/api/notification";
+
+        // JSON body data
+        String jsonBody = "{\"appId\": 9849, \"appToken\": \"MLENeeUtxrJE0rYHESEHYO\", \"title\": \"Push title here as a string\", \"body\": \"Push message here as a string\", \"dateSent\": \"8-5-2023 3:34PM\"}";
+
+        http.begin(url);
+
+        // Set headers
+        http.addHeader("Content-Type", "application/json");
+
+        // Send POST request and get response
+        int httpResponseCode = http.POST(jsonBody);
+
+        // Check for response
+        if (httpResponseCode > 0)
+        {
+            Serial.print("HTTP Response Code: ");
+            Serial.println(httpResponseCode);
+            String response = http.getString();
+            Serial.println(response);
+        }
+        else
+        {
+            Serial.print("Error sending POST request. HTTP Response Code: ");
+            Serial.println(httpResponseCode);
+        }
+
+        http.end();
     }
 }

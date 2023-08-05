@@ -23,7 +23,7 @@ const int pHPin = 32;
 bool kontrol = false;
 double temp, hum, ph;
 double Setpoint, Input, Output;
-double Kp = 2, Ki = 5, Kd = 1;
+double Kp = 20, Ki = 70, Kd = 1;
 
 unsigned long startTime, getDataMillis, currentTime, dataComputeMillis;
 unsigned long hours, minutes, seconds;
@@ -80,7 +80,7 @@ void loop()
    * and if firebase ready and wifi connected
    * every request need to be sequential for prevent firebase error
    */
-  if (WiFi.status() == WL_CONNECTED && Firebase.ready() && (millis() - getDataMillis > 20000 || getDataMillis == 0))
+  if (WiFi.status() == WL_CONNECTED && Firebase.ready() && (millis() - getDataMillis > 10000 || getDataMillis == 0))
   {
     // use data millis for tracking when the last request
     // so the system will do multitasking
@@ -106,7 +106,6 @@ void loop()
       currentTime = millis() - startTime;
       // we need to check every loop if the time is change
       // so we can make request every hour and minute change
-      unsigned long prev_hours = hours;
       unsigned long prev_minutes = minutes;
       seconds = currentTime / 1000;
       minutes = seconds / 60;
@@ -115,6 +114,8 @@ void loop()
       seconds = seconds % 60;
       minutes = minutes % 60;
 
+      String stopwatch = String(hours) + ":" + String(minutes) + ":" + String(seconds) + " detik";
+
       String time = String(hours) + " jam " + String(minutes) + " menit";
 
       Serial.println("******************************");
@@ -122,22 +123,19 @@ void loop()
       Serial.println(" ");
 
       lcd.setCursor(8, 0);
-      lcd.println("Time:" + time);
+      lcd.println(stopwatch);
 
       /*
        * this two condition is need to decrease the firebase request
        * the first condition is for history data that only need to update every hour
        * the second condition is for time data that only need to update every minute
        */
-      if (prev_hours != hours)
+      if (prev_minutes != minutes)
       {
         title = network->get_history_title();                   // get history title to specific history data
         network->append_suhu_to_history((int)temp, title);      // append temperature data to array
         network->append_kelembaban_to_history((int)hum, title); // append humidity data to array
         network->update_time_history(time, title);              // update time history
-      }
-      if (prev_minutes != minutes)
-      {
         network->update_time(time);
       }
 
@@ -233,6 +231,8 @@ void get_sensor_data()
   lcd.println("Temp:" + String((int)temp));
   lcd.setCursor(0, 1);
   lcd.println("Hum :" + String((int)hum));
+  lcd.setCursor(8, 1);
+  lcd.println("pH :" + String(ph));
 }
 
 /*
