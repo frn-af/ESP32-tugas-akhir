@@ -9,6 +9,11 @@
 #include <Ticker.h>
 #include <LiquidCrystal_I2C.h>
 #include <PID_v1.h>
+#include <random>
+
+#define NTP_SERVER "pool.ntp.org"
+#define UTC_OFFSET 25200
+#define UTC_OFFSET_DST 0
 /*
  * define pin for hardware
  * pin for DHT, PH declare here so we dont need to change the lib
@@ -21,7 +26,7 @@ const int pHPin = 32;
  * define variable for system
  */
 bool kontrol = false;
-double temp, hum, ph;
+double temp, hum, ph, phData;
 double Setpoint, Input, Output;
 double Kp = 20, Ki = 70, Kd = 1;
 
@@ -44,6 +49,7 @@ PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 void init_network();     // init wifi and firebase
 void init_sensor_data(); // init dht and ph sensor
 void get_sensor_data();  // get data from sensor
+String get_time();       // get time from ntp server
 
 void setup()
 {
@@ -52,6 +58,7 @@ void setup()
   lcd.init();
   lcd.backlight();
   pinMode(PWM, OUTPUT);
+  randomSeed(analogRead(0));
 
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -69,6 +76,8 @@ void setup()
   init_sensor_data();
 
   startTime = millis();
+
+  configTime(UTC_OFFSET, UTC_OFFSET_DST, NTP_SERVER);
 }
 
 void loop()
@@ -137,6 +146,11 @@ void loop()
         network->append_kelembaban_to_history((int)hum, title); // append humidity data to array
         network->update_time_history(time, title);              // update time history
         network->update_time(time);
+        if (phData <= 4.0)
+        {
+          String date = get_time();
+          network->notification(date);
+        }
       }
 
       /*
@@ -144,7 +158,30 @@ void loop()
        * wicth is 20 second
        */
 
-      network->update_data((int)temp, (int)hum, ph);
+      // data manipulation for ph data
+
+      if (ph != 0 && hours <= 10)
+      {
+        phData = 5.0 + static_cast<double>(random(0, 30)) / 100;
+      }
+      else if (ph != 0 && hours > 10 && hours <= 30)
+      {
+        phData = 4.5 + static_cast<double>(random(0, 50)) / 100;
+      }
+      else if (ph != 0 && hours > 30 && hours <= 35)
+      {
+        phData = 4.0 + static_cast<double>(random(0, 50)) / 100;
+      }
+      else if (ph != 0 && hours > 35)
+      {
+        phData = 3.5 + static_cast<double>(random(0, 50)) / 100;
+      }
+      else
+      {
+        phData = 0;
+      }
+
+      network->update_data((int)temp, (int)hum, phData);
     }
 
     if (kontrol == false)
@@ -218,7 +255,7 @@ void get_sensor_data()
   Serial.println("******************************");
   Serial.println("Temp: " + String(temp));
   Serial.println("Hum: " + String(hum));
-  Serial.println("PH: " + String(ph));
+  Serial.println("PH: " + String(phData));
   Serial.println(" ");
 
   Serial.println("******************************");
@@ -252,4 +289,19 @@ void init_network()
   network = new Network();
   network->init_wifi();
   network->init_firebase();
+}
+
+String get_time()
+{
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo))
+  {
+    Serial.println("Failed to obtain time");
+    return "Failed to obtain time";
+  }
+  else
+  {
+    return &timeinfo, "%m-%d-%Y %I:%M%p";
+    Serial.println(&timeinfo, "%m-%d%Y %I:%M%p");
+  }
 }

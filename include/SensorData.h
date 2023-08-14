@@ -16,8 +16,8 @@ private:
     int nilai_analog_PH;
     double Tegangan_pH;
 
-    float PH4 = 3.24;
-    float PH7 = 2.7;
+    float PH4 = 3.1;
+    float PH7 = 2.6;
 
 public:
     SensorData(int DHTPin, int pHPin);

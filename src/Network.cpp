@@ -9,8 +9,8 @@
 #include <addons/TokenHelper.h>
 
 /* 1. Define the WiFi credentials */
-#define WIFI_SSID "vivo 1719"
-#define WIFI_PASSWORD "onlyme1234"
+#define WIFI_SSID "sibro"
+#define WIFI_PASSWORD "11111111"
 
 /* 2. Define the API Key */
 #define API_KEY "AIzaSyAQqn8sTOO34RnbW5AWfegClYKqe-XM8E4"
@@ -90,6 +90,7 @@ void Network::init_firebase()
     // Limit the size of response payload to be collected in FirebaseData
 
     Firebase.begin(&config, &auth);
+    Firebase.reconnectWiFi(true);
 }
 
 /*
@@ -384,7 +385,7 @@ void Network::update_time_history(String time, String title)
     }
 }
 
-void Network::notification()
+void Network::notification(String date)
 {
     if (WiFi.status() == WL_CONNECTED)
     {
@@ -394,7 +395,7 @@ void Network::notification()
         const char *url = "https://app.nativenotify.com/api/notification";
 
         // JSON body data
-        String jsonBody = "{\"appId\": 9849, \"appToken\": \"MLENeeUtxrJE0rYHESEHYO\", \"title\": \"Push title here as a string\", \"body\": \"Push message here as a string\", \"dateSent\": \"8-5-2023 3:34PM\"}";
+        String jsonBody = "{\"appId\": 9849, \"appToken\": \"MLENeeUtxrJE0rYHESEHYO\", \"title\": \"Tapai Telah Matang\", \"body\": \"Proses fermentasi telah selesai, Harap matikan system\", \"dateSent\": \"" + date + "\"}";
 
         http.begin(url);
 

@@ -29,7 +29,7 @@ public:
     void append_kelembaban_to_history(int kelembaban, String title);
     void update_time_history(String time, String title);
     void update_time(String time);
-    void notification(String message);
+    void notification(String date);
 };
 
 #endif // !Network_H_
