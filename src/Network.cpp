@@ -9,18 +9,18 @@
 #include <addons/TokenHelper.h>
 
 /* 1. Define the WiFi credentials */
-#define WIFI_SSID "sibro"
-#define WIFI_PASSWORD "11111111"
+#define WIFI_SSID "XXXXXX"
+#define WIFI_PASSWORD "XXXXXXXX"
 
 /* 2. Define the API Key */
-#define API_KEY "AIzaSyAQqn8sTOO34RnbW5AWfegClYKqe-XM8E4"
+#define API_KEY "XXXXXXXXXXXXXXXX"
 
 /* 3. Define the project ID */
-#define FIREBASE_PROJECT_ID "tugas-akhir-997ec"
+#define FIREBASE_PROJECT_ID "XXXXXXXXXXX"
 
 /* 4. Define the user Email and password that alreadey registerd or added in your project */
-#define USER_EMAIL "esp32@esp.com"
-#define USER_PASSWORD "12345678"
+#define USER_EMAIL "XXXXXXXXXXXXX"
+#define USER_PASSWORD "XXXXXXXXXXXX"
 
 static Network *instance = NULL;
 
